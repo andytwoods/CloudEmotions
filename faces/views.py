@@ -1,6 +1,8 @@
 import base64
 import io
+import json
 
+import keras
 from django.http import JsonResponse
 from django.shortcuts import render
 from keras.preprocessing.image import img_to_array
@@ -8,9 +10,15 @@ import imutils
 import cv2
 from keras.models import load_model
 import numpy as np
+import tensorflow as tf
 
 detection_model_path = 'haarcascade_files/haarcascade_frontalface_default.xml'
 face_detection = cv2.CascadeClassifier(detection_model_path)
+
+emotion_model_path = 'models/_mini_XCEPTION.102-0.66.hdf5'
+emotion_classifier = load_model(emotion_model_path, compile=False)
+graph = tf.get_default_graph()
+EMOTIONS = ["angry", "disgust", "scared", "happy", "sad", "surprised", "neutral"]
 
 
 def __data_uri_to_cv2_img(uri):
@@ -19,17 +27,44 @@ def __data_uri_to_cv2_img(uri):
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     return img
 
-def crunch_frame(b64_string):
+
+def __extract_faces(b64_string):
     img = __data_uri_to_cv2_img(b64_string)
-    cv2.imshow("test", img)
-    cv2.waitKey(50)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_detection.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30),
+                                            flags=cv2.CASCADE_SCALE_IMAGE)
+    simplified_faces = []
+    for face in faces:
+        simplified_faces.append(face.tolist())
+    return simplified_faces
+
+
+def __extract_emotion(b64_face):
+    img = __data_uri_to_cv2_img(b64_face)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    roi = cv2.resize(gray, (64, 64))
+    roi = roi.astype("float") / 255.0
+    roi = img_to_array(roi)
+    roi = np.expand_dims(roi, axis=0)
+    global graph
+    with graph.as_default():
+        preds = emotion_classifier.predict(roi)[0]
+    emotion_probability = np.max(preds)
+    label = EMOTIONS[preds.argmax()]
+    return {label: float(emotion_probability)}
+
 
 def frame(request):
-
     frame = request.GET.get('frame', None)
     if frame:
-        crunch_frame(frame)
-        return JsonResponse({}, status=200)
+        faces = __extract_faces(frame)
+        return JsonResponse({'faces': faces}, status=200)
+
+    frame = request.GET.get('emotion', None)
+    print(frame)
+    if frame:
+        emotion = __extract_emotion(frame)
+        return JsonResponse({'emotion': emotion}, status=200)
 
     context = {}
     return render(request, 'faces/webcam.html', context=context)

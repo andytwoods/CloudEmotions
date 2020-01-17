@@ -22,9 +22,12 @@
 
 <body>
 <div id="container">
-    <video autoplay="true" id="videoElement">
-
-    </video>
+    <video autoplay="true" id="videoElement"></video>
+</div>
+<div id="container">
+    <div>
+        <canvas class='videoElement' id="canvas"></canvas>
+    </div>
 </div>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
 <script>
@@ -40,12 +43,15 @@
             if (!data['err']) {
                 data['err'] = 'problem'
             }
-            if(callback)callback(data)
+            if (callback) callback(data)
         })
     }
 </script>
 <script>
     var video = document.querySelector("#videoElement");
+
+    var video_width = $(video).width();
+    var video_height = $(video).height();
 
     if (navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({video: true})
@@ -56,14 +62,50 @@
                 console.log("Something went wrong!");
             });
 
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
+        var canvas = document.getElementById('canvas');
+        canvas.width = video_width;
+        canvas.height = video_height;
 
-        function drawFrame(e) {
-            ctx.drawImage(video, 0, 0);
+        var ctx = canvas.getContext('2d');
+        ctx.lineWidth = 10;
+
+        const cropCanvas = (sourceCanvas, left, top, width, height) => {
+            let destCanvas = document.createElement('canvas');
+            destCanvas.width = width;
+            destCanvas.height = height;
+            destCanvas.getContext("2d").drawImage(
+                sourceCanvas,
+                left, top, width, height,  // source rect with content to crop
+                0, 0, width, height);      // newCanvas, same size as source rect
+            return destCanvas;
+        }
+
+        function calc_emotion(face) {
+            ajax_callback({'emotion': face.toDataURL("image/jpeg")}, function(emotion){
+                console.log(emotion)
+            });
+        }
+
+        function received_faces(faces_arr) {
+            var faces = faces_arr['faces'];
+            if (!faces) return;
+
+            for (var i = 0; i < faces.length; i++) {
+                var face = faces[i];
+                var cropped = cropCanvas(canvas, face[0], face[1], face[2], face[3])
+                calc_emotion(cropped);
+                ctx.beginPath();
+                ctx.rect(face[0], face[1], face[2], face[3]);
+                ctx.stroke();
+            }
+        }
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, video_width, video_height, 0, 0, video_width / 2, video_height / 2);
             var jpegUrl = canvas.toDataURL("image/jpeg");
-            console.log(jpegUrl)
-            ajax_callback({'frame': jpegUrl})
+            ajax_callback({'frame': jpegUrl}, received_faces);
+            ctx.beginPath();
         }
 
         window.setInterval(drawFrame, 1000)
