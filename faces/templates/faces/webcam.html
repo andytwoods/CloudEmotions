@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Display Webcam Stream</title>
+
+    <style>
+        #container {
+            margin: 0 auto;
+            width: 500px;
+            height: 375px;
+            border: 10px #333 solid;
+        }
+
+        #videoElement {
+            width: 500px;
+            height: 375px;
+            background-color: #666;
+        }
+    </style>
+</head>
+
+<body>
+<div id="container">
+    <video autoplay="true" id="videoElement">
+
+    </video>
+</div>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
+<script>
+    function ajax_callback(data, callback, url) {
+        $.ajax({
+            url: url || "",
+            dataType: 'json',
+            type: 'get',
+            data: data
+        }).done(function (data) {
+            if (callback) callback(data)
+        }).fail(function (data) {
+            if (!data['err']) {
+                data['err'] = 'problem'
+            }
+            if(callback)callback(data)
+        })
+    }
+</script>
+<script>
+    var video = document.querySelector("#videoElement");
+
+    if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({video: true})
+            .then(function (stream) {
+                video.srcObject = stream;
+            })
+            .catch(function (err0r) {
+                console.log("Something went wrong!");
+            });
+
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+
+        function drawFrame(e) {
+            ctx.drawImage(video, 0, 0);
+            var jpegUrl = canvas.toDataURL("image/jpeg");
+            console.log(jpegUrl)
+            ajax_callback({'frame': jpegUrl})
+        }
+
+        window.setInterval(drawFrame, 1000)
+
+    }
+</script>
+
+
+</body>
+</html>
