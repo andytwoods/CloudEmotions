@@ -25,8 +25,7 @@ SECRET_KEY = '*)(30of5mn&zak7i#*66!q9unx8c+4=uiooa-bppi%un_@9u5n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['knyo48ck0h.execute-api.eu-west-2.amazonaws.com']
 
 # Application definition
 
@@ -123,3 +122,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# force root domain (issue when using raw lambda url as suffixes /production/
+FORCE_SCRIPT_NAME = '/'
+
+ADMIN_URL = 'banana/'

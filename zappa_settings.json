@@ -1,0 +1,26 @@
+{
+    "dev": {
+        "aws_region": "eu-west-2",
+        "django_settings": "cloudEmotions.settings",
+        "profile_name": "default",
+        "project_name": "cloudemotions",
+        "runtime": "python3.7",
+        "s3_bucket": "zappa-cloud-emotions-bucket",
+        "slim_handler": true,
+        "keep_warm": true,
+        "memory_size": 1024,
+        "manage_roles": true,
+        "extra_permissions": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ses:SendRawEmail",
+          "ses:SendEmail",
+          "ses:SendTemplatedEmail",
+          "s3:GetObject"
+        ],
+        "Resource": "*"
+      }
+    ]
+    }
+}

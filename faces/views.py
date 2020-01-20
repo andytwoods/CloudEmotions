@@ -1,12 +1,9 @@
 import base64
-import io
-import json
 
-import keras
 from django.http import JsonResponse
 from django.shortcuts import render
 from keras.preprocessing.image import img_to_array
-import imutils
+
 import cv2
 from keras.models import load_model
 import numpy as np
@@ -61,7 +58,7 @@ def frame(request):
         return JsonResponse({'faces': faces}, status=200)
 
     frame = request.GET.get('emotion', None)
-    print(frame)
+
     if frame:
         emotion = __extract_emotion(frame)
         return JsonResponse({'emotion': emotion}, status=200)
