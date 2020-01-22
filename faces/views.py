@@ -2,20 +2,29 @@ import base64
 
 from django.http import JsonResponse
 from django.shortcuts import render
-from keras.preprocessing.image import img_to_array
 
 import cv2
-from keras.models import load_model
-import numpy as np
 import tensorflow as tf
+import numpy as np
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.python.keras.backend import set_session
+
+
+sess = tf.Session()
+graph = tf.get_default_graph()
+set_session(sess)
 
 detection_model_path = 'haarcascade_files/haarcascade_frontalface_default.xml'
 face_detection = cv2.CascadeClassifier(detection_model_path)
 
+
 emotion_model_path = 'models/_mini_XCEPTION.102-0.66.hdf5'
 emotion_classifier = load_model(emotion_model_path, compile=False)
-graph = tf.get_default_graph()
+
 EMOTIONS = ["angry", "disgust", "scared", "happy", "sad", "surprised", "neutral"]
+
+graph = tf.get_default_graph()
 
 
 def __data_uri_to_cv2_img(uri):
@@ -43,8 +52,11 @@ def __extract_emotion(b64_face):
     roi = roi.astype("float") / 255.0
     roi = img_to_array(roi)
     roi = np.expand_dims(roi, axis=0)
+    global emotion_classifier
+    global sess
     global graph
     with graph.as_default():
+        set_session(sess)
         preds = emotion_classifier.predict(roi)[0]
     emotion_probability = np.max(preds)
     label = EMOTIONS[preds.argmax()]
