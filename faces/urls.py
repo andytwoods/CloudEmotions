@@ -19,6 +19,6 @@ from django.urls import path
 from faces import views
 
 urlpatterns = [
-    path('webcam/', views.frame, name='frame'),
+    path('', views.frame, name='frame'),
 
 ]
